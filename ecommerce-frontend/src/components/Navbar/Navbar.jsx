@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import './Navbar.css'
+import axios from 'axios'
 
 const Navbar = ({ isAdmin, onAdminLogin, onAdminLogout, darkMode, setDarkMode, cartCount }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -9,7 +10,8 @@ const Navbar = ({ isAdmin, onAdminLogin, onAdminLogout, darkMode, setDarkMode, c
   const [authData, setAuthData] = useState({
     email: '',
     password: '',
-    name: ''
+    name: '',
+    password_confirmation: ''
   })
 
   const toggleMenu = () => {
@@ -26,20 +28,15 @@ const Navbar = ({ isAdmin, onAdminLogin, onAdminLogout, darkMode, setDarkMode, c
     if (isLogin) {
       // Connexion avec l'API Laravel
       try {
-        const response = await fetch('http://localhost:8000/api/auth/login', {
-          method: 'POST',
+        const response = await axios.post('http://localhost:8000/api/login',authData, {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            email: authData.email,
-            password: authData.password
-          })
         })
 
-        const data = await response.json()
+        const data = response.data
 
-        if (response.ok) {
+        if (response.status === 200) {
           // Stocker le token et les informations d'authentification
           localStorage.setItem('authToken', data.token)
           localStorage.setItem('isAdmin', 'true')
@@ -59,22 +56,17 @@ const Navbar = ({ isAdmin, onAdminLogin, onAdminLogout, darkMode, setDarkMode, c
     } else {
       // Inscription
       try {
-        const response = await fetch('http://localhost:8000/api/auth/register', {
-          method: 'POST',
+        const values = { ...authData }
+
+        const response = await axios.post('http://localhost:8000/api/register', values,{
           headers: {
             'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: authData.name,
-            email: authData.email,
-            password: authData.password,
-            password_confirmation: authData.password
-          })
+          }
         })
 
-        const data = await response.json()
+        const data = await response.data
 
-        if (response.ok) {
+        if (response.status === 201) {
           localStorage.setItem('authToken', data.token)
           localStorage.setItem('isAdmin', 'true')
           localStorage.setItem('user', JSON.stringify(data.user))
@@ -129,7 +121,7 @@ const Navbar = ({ isAdmin, onAdminLogin, onAdminLogout, darkMode, setDarkMode, c
 
   const closeAuthModal = () => {
     setShowAuthForm(false)
-    setAuthData({ email: '', password: '', name: '' })
+    setAuthData({ email: '', password: '', name: '', password_confirmation: '' })
     setIsLogin(true)
   }
 
@@ -226,7 +218,7 @@ const Navbar = ({ isAdmin, onAdminLogin, onAdminLogout, darkMode, setDarkMode, c
                   <input
                     type="password"
                     name="password_confirmation"
-                    value={authData.password}
+                    value={authData.password_confirmation}
                     onChange={handleInputChange}
                     required
                     placeholder="Confirmez votre mot de passe"
